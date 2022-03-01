@@ -1,0 +1,22 @@
+{
+  "name": "sppk",
+  "version": "1.0.0",
+  "description": "A tool to automatically update PluralKit with SimplyPlural data.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "padlocks",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.10.0",
+    "axios": "^0.26.0",
+    "pkapi.js": "^3.1.0",
+    "ws": "^8.5.0"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.6",
+    "utf-8-validate": "^5.0.8"
+  }
+}
