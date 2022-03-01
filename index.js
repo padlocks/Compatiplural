@@ -9,7 +9,8 @@ const pkHeader = {
     'Authorization': config.pk_token
 }
 
-let e;
+let cache = {}
+let e
 main = async () => {
     openWebSocket()
 }
@@ -30,6 +31,8 @@ openWebSocket = async () => {
         switch (data.msg) {
             case "Successfully authenticated":
                 console.log('::SimplyWS:: authenticated')
+                // cache current front
+                cache.frontHistory = await SimplyAPI.getFronters()
                 break;
             case "Authentication violation: Token is missing or invalid. Goodbye :)":
                 console.log('::SimplyWS:: invalid token, exiting..')
@@ -49,7 +52,7 @@ generateResponse = async (target, data) => {
     let response = ''
     switch (target) {
         case 'frontHistory':
-            response += 'Front has changed!'
+            //response += 'Front has changed!'
             await asyncForEach(data.results, async (o) => {
                 await SimplyAPI.findMemberById(o.content.member)
                     .then(async (member) => {
@@ -67,37 +70,74 @@ generateResponse = async (target, data) => {
                                 }
                             }
 
+                            // cache front
+                            cache.frontHistory = await SimplyAPI.getFronters()
+
                             // post the new switch
                             axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({"members": fronters}), {
                                 headers: pkHeader
                             })
                             .catch(err => console.error(err.toJSON().message))
 
-                            response += '\n' + member.name + ' was added to the front.'
+                            response += '' + member.name + ' was added to the front.'
                             return
                         } 
                         else {
                             // get current fronters and patch the list
                             let fronters = await getPKFronters()
-                            let index = fronters.indexOf(member.pkId)
-                            fronters.splice(index, 1)
+                            let frontData = await SimplyAPI.getFronters()
+                            let action = await determineAction(o, frontData)
+                            // if delete operation, remove the member from the list
+                            switch (action) {
+                                case "remove":
+                                    let index = fronters.indexOf(member.pkId)
+                                    fronters.splice(index, 1)
 
-                            // find the "primary" fronter to move to the first element in the list
-                            let primary = findPrimary()
-                            if (primary) {
-                                if (fronters.indexOf(primary) > 0) {
-                                    fronters.splice(fronters.indexOf(primary), 1)
-                                    fronters.unshift(primary)
-                                }
+                                    // find the "primary" fronter to move to the first element in the list
+                                    let p = findPrimary()
+                                    if (p) {
+                                        if (fronters.indexOf(p) > 0) {
+                                            fronters.splice(fronters.indexOf(p), 1)
+                                            fronters.unshift(p)
+                                        }
+                                    }
+
+                                    // cache front
+                                    cache.frontHistory = await SimplyAPI.getFronters()
+
+                                    // post the new switch
+                                    axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
+                                        headers: pkHeader
+                                    })
+                                    .catch(err => console.error(err.message))
+
+                                    response += '' + member.name + ' was removed from the front.'
+                                    break;
+
+                                case "customStatus":
+                                    // find the "primary" fronter to move to the first element in the list
+                                    let primary = await findPrimary()
+                                    if (primary) {
+                                        if (fronters.indexOf(primary) > 0) {
+                                            fronters.splice(fronters.indexOf(primary), 1)
+                                            fronters.unshift(primary)
+
+                                            // cache front
+                                            cache.frontHistory = await SimplyAPI.getFronters()
+
+                                            // post the new switch
+                                            axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
+                                                headers: pkHeader
+                                            })
+                                            .catch(err => console.error(err.message))
+                                            response += '' + member.name + ' is now the primary fronter.'
+                                        }
+                                    }
+                                    else {
+                                        response += '' + member.name + ' changed custom status.'
+                                    }
+                                    break;
                             }
-
-                            // post the new switch
-                            axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
-                                headers: pkHeader
-                            })
-                            .catch(err => console.error(err.message))
-
-                            response += '\n' + member.name + ' was removed from the front.'
                             return
                         }
                     })
@@ -152,22 +192,75 @@ findPrimary = async () => {
     let fronters = await SimplyAPI.getFronters()
     return new Promise(async (resolve) => {
         await asyncForEach(fronters, async (fronter) => {
-            if (!fronter.customStatus) return
-            if (fronter.customStatus.toLowerCase().includes("primary")) {
-                found = true
-                let member = await SimplyAPI.findMemberById(fronter.content.member)
-                resolve(member.pkId)
+            if (fronter.content.customStatus) {
+                if (fronter.content.customStatus.toLowerCase().includes("primary")) {
+                    let member = await SimplyAPI.findMemberById(fronter.content.member)
+                    resolve(member.pkId)
+                    found = true
+                }
             }
         })
 
-        if (!found) resolve(null)
+        if (!found) resolve(false)
     })
+}
+
+determineAction = async (eventData, frontData = []) => {
+    if (frontData.length == 0) return 'remove'
+    let action = ''
+
+    // check for cache
+    if (!cache.frontHistory) {
+        let frontHistory = await SimplyAPI.getFronters()
+        cache.frontHistory = frontHistory
+    }
+
+    let diff = calculateDiff(cache.frontHistory, frontData)
+    if (diff.length == 1) {
+        if (diff[0].content.member) {
+            action = 'remove'
+        }
+        else if (diff[0].content.customStatus) {
+            // check if customStatus value is in cache
+            let foundInCache = Object.keys(cache.frontHistory).filter((key) => {
+                return cache.frontHistory[key] === diff[0].content.customStatus
+            })
+
+            // if value is unique, publish action
+            if (foundInCache.length == 0) {
+                action = 'customStatus'
+            }
+        }
+        else {
+            console.log('::SimplyWS:: Unrecognized diff: ' + JSON.stringify(diff))
+        }
+    }
+
+    return action
 }
 
 asyncForEach = async (array, callback) => {
     for (let index = 0; index < array.length; index++) {
         await callback(array[index], index, array);
     }
+}
+
+const { inspect } = require('util')
+const transform = require('lodash.transform')
+const isEqual = require('lodash.isequal')
+const isArray = require('lodash.isarray')
+const isObject = require('lodash.isobject')
+calculateDiff = (origObj, newObj) => {
+    changes = (newObj, origObj) => {
+        let arrayIndexCounter = 0
+        return transform(newObj, function (result, value, key) {
+            if (!isEqual(value, origObj[key])) {
+                let resultKey = isArray(origObj) ? arrayIndexCounter++ : key
+                result[resultKey] = (isObject(value) && isObject(origObj[key])) ? changes(value, origObj[key]) : value
+            }
+        })
+    }
+    return changes(newObj, origObj)
 }
 
 main()
