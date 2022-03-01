@@ -54,26 +54,48 @@ generateResponse = async (target, data) => {
                 await SimplyAPI.findMemberById(o.content.member)
                     .then(async (member) => {
                         if (o.operationType == "insert") {
+                            // get current fronters and add new fronter
                             let fronters = await getPKFronters()
                             fronters.push(member.pkId)
 
+                            // find the "primary" fronter to move to the first element in the list
+                            let primary = findPrimary()
+                            if (primary) {
+                                if (fronters.indexOf(primary) > 0) {
+                                    fronters.splice(fronters.indexOf(primary), 1)
+                                    fronters.unshift(primary)
+                                }
+                            }
+
+                            // post the new switch
                             axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({"members": fronters}), {
                                 headers: pkHeader
                             })
-                            .catch(err => console.error(err.toJSON().message));
+                            .catch(err => console.error(err.toJSON().message))
 
                             response += '\n' + member.name + ' was added to the front.'
                             return
                         } 
                         else {
+                            // get current fronters and patch the list
                             let fronters = await getPKFronters()
                             let index = fronters.indexOf(member.pkId)
                             fronters.splice(index, 1)
 
+                            // find the "primary" fronter to move to the first element in the list
+                            let primary = findPrimary()
+                            if (primary) {
+                                if (fronters.indexOf(primary) > 0) {
+                                    fronters.splice(fronters.indexOf(primary), 1)
+                                    fronters.unshift(primary)
+                                }
+                            }
+
+                            // post the new switch
                             axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
                                 headers: pkHeader
                             })
-                            .catch(err => console.error(err.message));
+                            .catch(err => console.error(err.message))
 
                             response += '\n' + member.name + ' was removed from the front.'
                             return
@@ -123,6 +145,23 @@ getPKFronters = async () => {
     })
     
     return members
+}
+
+findPrimary = async () => {    
+    let found = false
+    let fronters = await SimplyAPI.getFronters()
+    return new Promise(async (resolve) => {
+        await asyncForEach(fronters, async (fronter) => {
+            if (!fronter.customStatus) return
+            if (fronter.customStatus.toLowerCase().includes("primary")) {
+                found = true
+                let member = await SimplyAPI.findMemberById(fronter.content.member)
+                resolve(member.pkId)
+            }
+        })
+
+        if (!found) resolve(null)
+    })
 }
 
 asyncForEach = async (array, callback) => {
