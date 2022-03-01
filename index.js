@@ -9,8 +9,8 @@ const pkHeader = {
     'Authorization': config.pk_token
 }
 
-let cache = {}
 let e
+let cache = {}
 main = async () => {
     openWebSocket()
 }
@@ -117,7 +117,7 @@ generateResponse = async (target, data) => {
                                 case "customStatus":
                                     // find the "primary" fronter to move to the first element in the list
                                     let primary = await findPrimary()
-                                    if (primary) {
+                                    if (primary && fronters.length > 1) {
                                         if (fronters.indexOf(primary) > 0) {
                                             fronters.splice(fronters.indexOf(primary), 1)
                                             fronters.unshift(primary)
@@ -215,9 +215,12 @@ determineAction = async (eventData, frontData = []) => {
         cache.frontHistory = frontHistory
     }
 
+    // get the difference between cached history and current front
     let diff = calculateDiff(cache.frontHistory, frontData)
+    // we handle one thing at a time, although this should be expanded since you can modify multiple custom statuses at once
     if (diff.length == 1) {
-        if (diff[0].content.member) {
+        // if there's an endTime, it was a removal event
+        if (diff[0].content.endTime) {
             action = 'remove'
         }
         else if (diff[0].content.customStatus) {
@@ -232,7 +235,7 @@ determineAction = async (eventData, frontData = []) => {
             }
         }
         else {
-            console.log('::SimplyWS:: Unrecognized diff: ' + JSON.stringify(diff))
+            console.error('::SimplyWS:: Unrecognized diff: ' + JSON.stringify(diff))
         }
     }
 

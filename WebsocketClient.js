@@ -7,7 +7,7 @@ function WebSocketClient(url) {
     let connecting = false;
     let backoff = 250;
     const init = () => {
-        console.error(timestamp(), '::SimplyWS:: connecting');
+        console.error(`::SimplyWS:: [${timestamp()}] connecting`);
         connecting = false;
         if (client !== undefined) {
             client.removeAllListeners();
@@ -18,17 +18,17 @@ function WebSocketClient(url) {
                 clearTimeout(timeout);
                 timeout = undefined;
             }
-            timeout = setTimeout(() => client.terminate(), 35000);
+            timeout = setTimeout(() => client.terminate(), 350000);
         };
         client.on('ping', () => {
-            console.log(timestamp(), '::SimplyWS:: pinged');
+            console.log(`::SimplyWS:: [${timestamp()}] pinged`);
             heartbeat();
         });
         client.on('open', (e) => {
             if (typeof this.onOpen === 'function') {
                 this.onOpen();
             } else {
-                console.log(timestamp(), '::SimplyWS:: opened');
+                console.log(`::SimplyWS:: [${timestamp()}] opened`);
                 console.log(e);
             }
             heartbeat();
@@ -37,7 +37,7 @@ function WebSocketClient(url) {
             if (typeof this.onMessage === 'function') {
                 this.onMessage(e);
             } else {
-                console.log(timestamp(), '::SimplyWS:: messaged');
+                console.log(`::SimplyWS:: [${timestamp()}] messaged`);
             }
             heartbeat();
         });
@@ -51,7 +51,7 @@ function WebSocketClient(url) {
             } else if (typeof this.onClose === 'function') {
                 this.onClose();
             } else {
-                console.error(timestamp(), '::SimplyWS:: closed');
+                console.error(`::SimplyWS:: [${timestamp()}] closed`);
                 console.error(e);
             }
         });
@@ -65,7 +65,7 @@ function WebSocketClient(url) {
             } else if (typeof this.onError === 'function') {
                 this.onError(e);
             } else {
-                console.error(timestamp(), '::SimplyWS : errored');
+                console.error(`::SimplyWS:: [${timestamp()}] errored`);
                 console.error(e);
             }
         });
