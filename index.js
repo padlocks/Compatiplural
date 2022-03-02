@@ -127,7 +127,7 @@ generateResponse = async (target, data) => {
                                     // find the "primary" fronter to move to the first element in the list
                                     let primary = await findPrimary()
                                     if (primary && fronters.length > 1) {
-                                        if (fronters.indexOf(primary) > 0) {
+                                        if (fronters.indexOf(primary) >= 0) {
                                             fronters.splice(fronters.indexOf(primary), 1)
                                             fronters.unshift(primary)
 
@@ -234,8 +234,8 @@ determineAction = async (eventData, frontData = []) => {
     // get the difference between cached history and current front
     let diff = await calculateDiff(cache.frontHistory, frontData)
     // we handle one thing at a time, although this should be expanded since you can modify multiple custom statuses at once
-    if (diff.length == 1) {
-        if (diff[0].content.customStatus) {
+    if (diff.length >= 1) {
+        if (diff[0].content.customStatus || eventData.content.customStatus) {
             // check if customStatus value is in cache
             let foundInCache = Object.keys(cache.frontHistory).filter((key) => {
                 return cache.frontHistory[key] === diff[0].content.customStatus
@@ -247,6 +247,7 @@ determineAction = async (eventData, frontData = []) => {
             }
         }
         else {
+            if (eventData.content.customStatus == '') return 'customStatus'
             console.error('::SimplyWS:: Unrecognized diff: ' + JSON.stringify(diff))
         }
     }
