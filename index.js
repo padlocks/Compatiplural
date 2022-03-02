@@ -80,7 +80,10 @@ generateResponse = async (target, data) => {
                             axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({"members": fronters}), {
                                 headers: pkHeader
                             })
-                            .catch(err => console.error(err.toJSON().message))
+                            .catch(err => {
+                                if (err.toJSON().status == 400) unknownError400()
+                                else console.error(err.message)
+                            })
 
                             response += '' + member.name + ' was added to the front.'
                             return
@@ -112,7 +115,10 @@ generateResponse = async (target, data) => {
                                     axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
                                         headers: pkHeader
                                     })
-                                    .catch(err => console.error(err.message))
+                                    .catch(err => {
+                                        if (err.toJSON().status == 400) unknownError400()
+                                        else console.error(err.message)
+                                    })
 
                                     response += '' + member.name + ' was removed from the front.'
                                     break;
@@ -132,7 +138,10 @@ generateResponse = async (target, data) => {
                                             axios.post(`${pkUrl}/systems/${config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
                                                 headers: pkHeader
                                             })
-                                            .catch(err => console.error(err.message))
+                                            .catch(err => {
+                                                if (err.toJSON().status == 400) unknownError400()
+                                                else console.error(err.message)
+                                            })
                                             response += '' + member.name + ' is now the primary fronter.'
                                         }
                                     }
@@ -155,6 +164,10 @@ generateResponse = async (target, data) => {
     }
     return response
 }   
+
+unknownError400 = () => {
+    return
+}
 
 unknownTarget = (target) => {
     console.log('::SimplyWS:: Unknown update target: ' + target + '\n::SimplyWS:: Full message: ' + e)
@@ -219,14 +232,10 @@ determineAction = async (eventData, frontData = []) => {
     }
 
     // get the difference between cached history and current front
-    let diff = calculateDiff(cache.frontHistory, frontData)
+    let diff = await calculateDiff(cache.frontHistory, frontData)
     // we handle one thing at a time, although this should be expanded since you can modify multiple custom statuses at once
     if (diff.length == 1) {
-        // if there's an endTime, it was a removal event
-        if (diff[0].content.endTime) {
-            action = 'remove'
-        }
-        else if (diff[0].content.customStatus) {
+        if (diff[0].content.customStatus) {
             // check if customStatus value is in cache
             let foundInCache = Object.keys(cache.frontHistory).filter((key) => {
                 return cache.frontHistory[key] === diff[0].content.customStatus
@@ -239,6 +248,12 @@ determineAction = async (eventData, frontData = []) => {
         }
         else {
             console.error('::SimplyWS:: Unrecognized diff: ' + JSON.stringify(diff))
+        }
+    }
+    else {
+        // if there's an endTime, it was a removal event
+        if (eventData.content.endTime && !eventData.content.live) {
+            action = 'remove'
         }
     }
 
@@ -256,17 +271,20 @@ const transform = require('lodash.transform')
 const isEqual = require('lodash.isequal')
 const isArray = require('lodash.isarray')
 const isObject = require('lodash.isobject')
-calculateDiff = (origObj, newObj) => {
-    changes = (newObj, origObj) => {
-        let arrayIndexCounter = 0
-        return transform(newObj, function (result, value, key) {
-            if (!isEqual(value, origObj[key])) {
-                let resultKey = isArray(origObj) ? arrayIndexCounter++ : key
-                result[resultKey] = (isObject(value) && isObject(origObj[key])) ? changes(value, origObj[key]) : value
-            }
-        })
-    }
-    return changes(newObj, origObj)
+const { PassThrough } = require('stream')
+calculateDiff = async (origObj, newObj) => {
+    return new Promise(function (resolve) {
+        changes = (newObj, origObj) => {
+            let arrayIndexCounter = 0
+            return transform(newObj, function (result, value, key) {
+                if (!isEqual(value, origObj[key])) {
+                    let resultKey = isArray(origObj) ? arrayIndexCounter++ : key
+                    result[resultKey] = (isObject(value) && isObject(origObj[key])) ? changes(value, origObj[key]) : value
+                }
+            })
+        }
+        resolve(changes(newObj, origObj))
+    })
 }
 
 main()
