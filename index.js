@@ -19,7 +19,7 @@ main = async () => {
 }
 
 openWebSocket = async () => {
-    const WebSocketClient = require('./WebSocketClient')
+    const WebSocketClient = require('./WebsocketClient')
     const wss = new WebSocketClient(config.socket);
     let initialPacket = { "op": "authenticate", "token": config.token }
     wss.onOpen = (_) => { wss.send(JSON.stringify(initialPacket)); }
