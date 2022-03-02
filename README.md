@@ -1,5 +1,6 @@
-# SPPK
+# Compatiplural
 ### SimplyPlural -> PluralKit Connectivity.
+Compatiplural is a small application which enables the transfer of your SimplyPlural data to PluralKit.
 
 ### Fork this repository and simply deploy to Heroku!
 This project already has a Procfile set up, so it's super easy to get started. Once you have forked / cloned this repo, you can connect it to Heroku and fill in your credentials as config variables. More info below.

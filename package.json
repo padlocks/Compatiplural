@@ -1,7 +1,7 @@
 {
-  "name": "sppk",
+  "name": "Compatiplural",
   "version": "1.0.0",
-  "description": "A tool to automatically update PluralKit with SimplyPlural data.",
+  "description": "SimplyPlural -> PluralKit Connectivity",
   "main": "index.js",
   "scripts": {
     "start": "node .",
