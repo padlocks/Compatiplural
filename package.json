@@ -17,7 +17,6 @@
     "lodash.isequal": "^4.5.0",
     "lodash.isobject": "^3.0.2",
     "lodash.transform": "^4.6.0",
-    "pkapi.js": "^3.1.0",
     "ws": "^8.5.0"
   },
   "optionalDependencies": {
