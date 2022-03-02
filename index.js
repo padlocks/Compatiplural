@@ -247,6 +247,7 @@ determineAction = async (eventData, frontData = []) => {
             }
         }
         else {
+            if (diff[0].content.customStatus == '') return 'customStatus'
             console.error('::SimplyWS:: Unrecognized diff: ' + JSON.stringify(diff))
         }
     }
