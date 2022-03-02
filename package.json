@@ -12,6 +12,7 @@
   "dependencies": {
     "ajv": "^8.10.0",
     "axios": "^0.26.0",
+    "dotenv": "^16.0.0",
     "lodash.isarray": "^4.0.0",
     "lodash.isequal": "^4.5.0",
     "lodash.isobject": "^3.0.2",

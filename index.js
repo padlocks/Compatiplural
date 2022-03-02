@@ -1,9 +1,12 @@
+const dotenv = require('dotenv')
+dotenv.config()
+const config = process.env
+
 const axios = require('axios')
-const config = require('./config.json')
 const SAPI = require('./SimplyAPI')
 const SimplyAPI = new SAPI(config)
 
-const pkUrl = 'https://api.pluralkit.me/v2'
+const pkUrl = config.pk_url
 const pkHeader = {
     'Content-Type': 'application/json',
     'Authorization': config.pk_token
