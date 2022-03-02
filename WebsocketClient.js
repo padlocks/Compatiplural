@@ -18,7 +18,7 @@ function WebSocketClient(url) {
                 clearTimeout(timeout)
                 timeout = undefined
             }
-            timeout = setTimeout(() => client.terminate(), 350000)
+            timeout = setTimeout(() => client.terminate(), process.env.heartbeat || 350000)
         }
         client.on('ping', () => {
             console.log(`::SimplyWS:: [${timestamp()}] pinged`)
