@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "padlocks",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "ajv": "^8.10.0",
     "axios": "^0.26.0",
@@ -17,6 +17,7 @@
     "lodash.isequal": "^4.5.0",
     "lodash.isobject": "^3.0.2",
     "lodash.transform": "^4.6.0",
+    "simplyapi": "^1.6.0",
     "ws": "^8.5.0"
   },
   "optionalDependencies": {
