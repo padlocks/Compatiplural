@@ -1,8 +1,8 @@
 const dotenv = require('dotenv')
 dotenv.config()
 
-const { Config, System } = require('SimplyAPI')
-const { Util } = require('SimplyAPI')
+const { Config, System } = require('simplyapi')
+const { Util } = require('simplyapi')
 const { initializeCache, determineAction, insertFront, removeFront, updateCustomStatus } = require('./dataManager')
 
 let e

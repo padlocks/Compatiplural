@@ -18,7 +18,7 @@
     "lodash.isequal": "^4.5.0",
     "lodash.isobject": "^3.0.2",
     "lodash.transform": "^4.6.0",
-    "simplyapi": "^0.1.1",
+    "simplyapi": "^0.1.2",
     "ws": "^8.5.0"
   },
   "optionalDependencies": {
