@@ -1,5 +1,5 @@
 const axios = require('axios')
-const { Config, System, Util } = require('SimplyAPI')
+const { Config, System, Util } = require('simplyapi')
 
 const pkUrl = Config.pk_url
 const pkHeader = {
