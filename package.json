@@ -9,6 +9,7 @@
   },
   "author": "padlocks",
   "license": "MIT",
+  "repository": "github:padlocks/Compatiplural",
   "dependencies": {
     "ajv": "^8.10.0",
     "axios": "^0.26.0",
