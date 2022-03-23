@@ -1,14 +1,15 @@
 {
-  "name": "sppk",
+  "name": "Compatiplural",
   "version": "1.0.0",
-  "description": "A tool to automatically update PluralKit with SimplyPlural data.",
+  "description": "SimplyPlural -> PluralKit Connectivity",
   "main": "index.js",
   "scripts": {
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "padlocks",
-  "license": "ISC",
+  "license": "MIT",
+  "repository": "github:padlocks/Compatiplural",
   "dependencies": {
     "ajv": "^8.10.0",
     "axios": "^0.26.0",
@@ -17,6 +18,7 @@
     "lodash.isequal": "^4.5.0",
     "lodash.isobject": "^3.0.2",
     "lodash.transform": "^4.6.0",
+    "simplyapi": "^0.1.1",
     "ws": "^8.5.0"
   },
   "optionalDependencies": {
