@@ -9,12 +9,12 @@ This project already has a Procfile set up, so it's super easy to get started. O
 These can be set either in the .env file, in terminal, or in the config vars section of Heroku.
 | Setting  | Default | Description        |
 | ---------| ------- | ------------------ |
-| url_override  | https://api.apparyllis.com | The base URL for all SimplyPlural API requests. Unless you are running your own fork of Simply Plural, you shouldn't change this.  |
+| url_override  | https://v2.apparyllis.com | The base URL for all SimplyPlural API requests. Unless you are running your own fork of Simply Plural, you shouldn't change this.  |
 | api_version  | v1 | The target SimplyPlural API version. Unless you are running your own fork of Simply Plural, you shouldn't change this.  |
-| socket  | wss://api.apparyllis.com/v1/socket | The socket URL for SimplyPlural. Unless you are running your own fork of Simply Plural, you shouldn't change this.  |
+| socket  | wss://v2.apparyllis.com/v1/socket | The socket URL for SimplyPlural. Unless you are running your own fork of Simply Plural, you shouldn't change this.  |
 | pk_url | https://api.pluralkit.me/v2 | The base URL for all PluralKit API requests. Unless you are running your own fork of PluralKit, you shouldn't change this. |
 | token | token_here | Your SimplyPlural account token. As of now, the only permission necessary is the Read permission. |
 | userId | user_id | Your SimplyPlural account/system ID. You can find it in account info near the bottom. |
 | pk_token | pluralkit_token_here | Your PluralKit token. Get it by using `pk;token`. |
-| pk_system | pluralkit_system_id | Your Pluralkit system ID. This can be either your Discord account ID or your 5 letter ID shown by using pk;system. |
 | heartbeat | 4500000 | The time in miliseconds before the websocket client reconnects to the websocket server. |
+| max_workers | 1 | Max number of workers for processing enqueued tasks. This probably shouldn't be changed. |

@@ -5,19 +5,60 @@ const { Config, System } = require('simplyapi')
 const { Util } = require('simplyapi')
 const { initializeCache, determineAction, insertFront, removeFront, updateCustomStatus } = require('./dataManager')
 
+const {
+    isMainThread,
+    BroadcastChannel,
+    Worker
+} = require('node:worker_threads')
+
 let e
-main = async () => {
-    openWebSocket()
+main = () => {
+    initiateWorkerPool()
 }
 
-openWebSocket = async () => {
+// Queue
+const async = require('async')
+const queue = async.queue((task, completed) => {
+    let error = { status: false, message: '' }
+    update(task.data)
+        .catch(err => {
+            error.status = true
+            error.message = err
+        })
+    completed(error, task)
+
+}, Config.max_workers)
+
+initiateWorkerPool = () => {
+    // Worker Pool
+    const bc = new BroadcastChannel('plural')
+
+    if (isMainThread) {
+        openWebSocket()
+
+        bc.onmessage = (event) => {
+            //console.log('::SimplyWS:: received message from worker')
+            queue.push(event.data, (error, task) => {
+                if (error.status) {
+                    console.log(`An error occurred while processing task ${error.message}`)
+                }
+            })
+        }
+        for (let n = 0; n < Config.max_workers; n++)
+            new Worker(__filename)
+    }
+}
+
+// Socket
+openWebSocket = () => {
     const WebSocketClient = require('./WebsocketClient')
-    const wss = new WebSocketClient(Config.socket);
+    const wss = new WebSocketClient(Config.socket)
     let initialPacket = { "op": "authenticate", "token": Config.token }
     wss.onOpen = (_) => { wss.send(JSON.stringify(initialPacket)); }
     wss.onClose = (e) => { console.log('SimplyWS/onClose :: %s', e); e = '' }
     wss.onError = (e) => { console.log('SimplyWS/onError :: %s', e) }
 
+    const bc = new BroadcastChannel('plural')
     wss.onMessage = (raw) => {
         e = raw
         let data = JSON.parse(e)
@@ -33,7 +74,8 @@ openWebSocket = async () => {
                 console.log('::SimplyWS:: invalid token, exiting..')
                 process.exit(1)
             case "update":
-                update(data)
+                initializeCache()
+                bc.postMessage({data: data})
                 break
             default:
                 //unrecognizedMessage(data.msg)
@@ -42,6 +84,7 @@ openWebSocket = async () => {
     }
 }
 
+// Data Processing
 update = async (data) => {
     let target = data.target
     switch (target) {

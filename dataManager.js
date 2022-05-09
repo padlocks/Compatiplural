@@ -3,7 +3,7 @@ const { Config, System, Util } = require('simplyapi')
 
 const pkUrl = Config.pk_url
 const pkHeader = {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json; charset=UTF-8',
     'Authorization': Config.pk_token
 }
 
@@ -11,10 +11,6 @@ let cache = {}
 async function initializeCache() {
     let system = new System(Config)
     cache.frontHistory = await system.getFronters()
-}
-
-function unknownError400() {
-    return
 }
 
 function unknownTarget(target) {
@@ -25,15 +21,9 @@ function unrecognizedMessage(msg) {
     console.log('::SimplyWS:: Unrecognized message: ' + msg + '\n::SimplyWS:: Full message: ' + e)
 }
 
-// async function asyncForEach(array, callback) {
-//     for (let index = 0; index < array.length; index++) {
-//         await callback(array[index], index, array)
-//     }
-// }
-
 async function getPKFronters() {
     let members = []
-    let fronters = await axios.get(`${pkUrl}/systems/${Config.pk_system}/fronters`, {
+    let fronters = await axios.get(`${pkUrl}/systems/@me/fronters`, {
         headers: pkHeader
     })
         .catch((err) => {
@@ -118,9 +108,13 @@ async function determineAction(eventData, frontData = []) {
 
 async function insertFront(member) {
     // get current fronters and add new fronter
-    let system = new System(Config)
     let fronters = await getPKFronters()
-    fronters.push(member.content.pkId)
+    if (!fronters.includes(member.content.pkId)) {
+        fronters.push(member.content.pkId)
+    } else {
+        console.warn('::SimplyWS:: Member already in fronters: ' + member.content.pkId)
+        return
+    }
 
     // find the "primary" fronter to move to the first element in the list
     let primary = await findPrimary()
@@ -131,38 +125,57 @@ async function insertFront(member) {
         }
     }
 
-    // cache front
-    cache.frontHistory = await system.getFronters()
-
-    // post the new switch
-    axios.post(`${pkUrl}/systems/${Config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
+    // post the new switch        
+    let url = `${pkUrl}/systems/@me/switches`
+    await axios.post(url, JSON.stringify({ "members": fronters }), {
         headers: pkHeader
     })
-        .catch(err => {
-            if (err.toJSON().status == 400)
-                unknownError400()
-            else if (err.toJSON().status == 429)
+        .then(async (res) => {
+            let front = await getPKFronters()
+            if (!front.includes(member.content.pkId)) {
+                console.log('::SimplyWS:: Failed to insert fronter: ' + member.content.pkId)
+                await insertFront(member)
+                return
+            } else {
+                console.log('::SimplyWS:: ' + member.content.name + ' was added to the front.')
+            }
+        })
+        .catch(async err => {
+            let status = err.status || err.toJSON().status
+            if (status == 400) {
+                // if the fronter is already in the front, do nothing
+                return
+            }
+            else if (status == 404) {
+                // member not found
+                console.error("::SimplyWS:: Could not find member: " + member.content.pkId)
+                let index = fronters.indexOf(member.content.pkId)
+                fronters.splice(index, 1)
+                return
+            }
+            else if (status == 429) {
                 // Too many requests
-                setTimeout(function () {
-                    insertFront(member)
+                console.warn("::SimplyWS:: Too many requests, waiting to try again.")
+                let index = fronters.indexOf(member.content.pkId)
+                fronters.splice(index, 1)
+                setTimeout(async function () {
+                    await insertFront(member)
                 }, 1000)
                 return
+            }
         })
-
-    let checkFront = await getPKFronters()
-    if (!checkFront.includes(member.content.pkId)) {
-        await insertFront(member)
-        return
-    } else {
-        console.log('::SimplyWS:: ' + member.content.name + ' was added to the front.')
-    }
 }
 
 async function removeFront(member) {
-    let system = new System(Config)
     let fronters = await getPKFronters()
-    let index = fronters.indexOf(member.content.pkId)
-    fronters.splice(index, 1)
+    
+    if (fronters.includes(member.content.pkId)) {
+        let index = fronters.indexOf(member.content.pkId)
+        fronters.splice(index, 1)
+    } else {
+        console.warn('::SimplyWS:: Member is not in front: ' + member.content.pkId)
+        return
+    }
 
     // find the "primary" fronter to move to the first element in the list
     let p = await findPrimary()
@@ -173,31 +186,37 @@ async function removeFront(member) {
         }
     }
 
-    // cache front
-    cache.frontHistory = await system.getFronters()
-
-    // post the new switch
-    axios.post(`${pkUrl}/systems/${Config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
+    let url = `${pkUrl}/systems/@me/switches`
+    await axios.post(url, JSON.stringify({ "members": fronters }), {
         headers: pkHeader
     })
-        .catch(err => {
-            if (err.toJSON().status == 400)
-                unknownError400()
-            else if (err.toJSON().status == 429)
+        .then(async (res) => {
+            let front = await getPKFronters()
+            if (front.includes(member.content.pkId)) {
+                console.log('::SimplyWS:: Failed to remove fronter: ' + member.content.pkId)
+                await removeFront(member)
+                return
+            } else {
+                console.log('::SimplyWS:: ' + member.content.name + ' was removed from the front.')
+            }
+        })
+        .catch(async err => {        
+            let status = err.status || err.toJSON().status    
+            if (status == 400) {
+                // fronter is already not in front
+                console.warn("::SimplyWS:: " + member.content.name + " is not in the front.")
+                return
+            }
+            else if (status == 429) {
                 // Too many requests
-                setTimeout(function () {
-                    removeFront(member)
+                console.warn("::SimplyWS:: Too many requests, waiting to try again.")
+                fronters.push(member.content.pkId)
+                setTimeout(async function () {
+                    await removeFront(member)
                 }, 1000)
                 return
+            }
         })
-    
-    let checkFront = await getPKFronters()
-    if (checkFront.includes(member.content.pkId)) {
-        await removeFront(member)
-        return
-    } else {
-        console.log('::SimplyWS:: ' + member.content.name + ' was removed from the front.')
-    }
 }
 
 async function updateCustomStatus(member) {
@@ -210,20 +229,18 @@ async function updateCustomStatus(member) {
             fronters.splice(fronters.indexOf(primary), 1)
             fronters.unshift(primary)
 
-            // cache front
-            cache.frontHistory = await system.getFronters()
-
             // post the new switch
-            axios.post(`${pkUrl}/systems/${Config.pk_system}/switches`, JSON.stringify({ "members": fronters }), {
+            axios.post(`${pkUrl}/systems/@me/switches`, JSON.stringify({ "members": fronters }), {
                 headers: pkHeader
             })
-                .catch(err => {
+                .catch(async err => {
                     if (err.toJSON().status == 400)
                         unknownError400()
                     else if (err.toJSON().status == 429)
-                        // Too many requests
+                        //Too many requests
+                        console.warn("::SimplyWS:: Too many requests, waiting to try again.")
                         setTimeout(function () {
-                            updateCustomStatus(member)
+                            await updateCustomStatus(member)
                         }, 1000)
                         return
                 })
@@ -236,12 +253,10 @@ async function updateCustomStatus(member) {
     }
 }
 
-const { inspect } = require('util')
 const transform = require('lodash.transform')
 const isEqual = require('lodash.isequal')
 const isArray = require('lodash.isarray')
 const isObject = require('lodash.isobject')
-const { PassThrough } = require('stream')
 async function calculateDiff(origObj, newObj) {
     return new Promise(function (resolve) {
         changes = (newObj, origObj) => {
@@ -259,7 +274,6 @@ async function calculateDiff(origObj, newObj) {
 
 module.exports = {
     initializeCache,
-    unknownError400,
     unknownTarget,
     unrecognizedMessage,
     getPKFronters,
