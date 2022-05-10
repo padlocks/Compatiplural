@@ -16,5 +16,5 @@ These can be set either in the .env file, in terminal, or in the config vars sec
 | token | token_here | Your SimplyPlural account token. As of now, the only permission necessary is the Read permission. |
 | userId | user_id | Your SimplyPlural account/system ID. You can find it in account info near the bottom. |
 | pk_token | pluralkit_token_here | Your PluralKit token. Get it by using `pk;token`. |
-| pk_system | pluralkit_system_id | Your Pluralkit system ID. This can be either your Discord account ID or your 5 letter ID shown by using pk;system. |
 | heartbeat | 4500000 | The time in miliseconds before the websocket client reconnects to the websocket server. |
+| max_workers | 1 | Max number of workers for processing enqueued tasks. This probably shouldn't be changed. |
