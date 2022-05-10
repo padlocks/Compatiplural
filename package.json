@@ -1,6 +1,6 @@
 {
   "name": "Compatiplural",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "SimplyPlural -> PluralKit Connectivity",
   "main": "index.js",
   "scripts": {
@@ -15,11 +15,10 @@
     "async": "^3.2.3",
     "axios": "^0.26.0",
     "dotenv": "^16.0.0",
-    "lodash.isarray": "^4.0.0",
     "lodash.isequal": "^4.5.0",
     "lodash.isobject": "^3.0.2",
     "lodash.transform": "^4.6.0",
-    "simplyapi": "^0.1.3",
+    "simplyapi": "^0.1.4",
     "ws": "^8.5.0"
   },
   "optionalDependencies": {

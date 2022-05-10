@@ -240,7 +240,7 @@ async function updateCustomStatus(member) {
                         //Too many requests
                         console.warn("::SimplyWS:: Too many requests, waiting to try again.")
                         setTimeout(function () {
-                            await updateCustomStatus(member)
+                            updateCustomStatus(member)
                         }, 1000)
                         return
                 })
@@ -255,7 +255,6 @@ async function updateCustomStatus(member) {
 
 const transform = require('lodash.transform')
 const isEqual = require('lodash.isequal')
-const isArray = require('lodash.isarray')
 const isObject = require('lodash.isobject')
 async function calculateDiff(origObj, newObj) {
     return new Promise(function (resolve) {
@@ -263,7 +262,7 @@ async function calculateDiff(origObj, newObj) {
             let arrayIndexCounter = 0
             return transform(newObj, function (result, value, key) {
                 if (!isEqual(value, origObj[key])) {
-                    let resultKey = isArray(origObj) ? arrayIndexCounter++ : key
+                    let resultKey = Array.isArray(origObj) ? arrayIndexCounter++ : key
                     result[resultKey] = (isObject(value) && isObject(origObj[key])) ? changes(value, origObj[key]) : value
                 }
             })
