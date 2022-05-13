@@ -39,6 +39,7 @@ initiateWorkerPool = () => {
         bc.onmessage = (event) => {
             //console.log('::SimplyWS:: received message from worker')
             queue.push(event.data, (error, task) => {
+                // task completed
                 if (error.status) {
                     console.log(`An error occurred while processing task ${error.message}`)
                 }
@@ -59,6 +60,7 @@ openWebSocket = () => {
     wss.onError = (e) => { console.log('SimplyWS/onError :: %s', e) }
 
     const bc = new BroadcastChannel('plural')
+    let first_auth = true
     wss.onMessage = (raw) => {
         e = raw
         let data = JSON.parse(e)
@@ -66,15 +68,15 @@ openWebSocket = () => {
 
         switch (data.msg) {
             case "Successfully authenticated":
-                console.log('::SimplyWS:: authenticated')
+                if (!process.env.silence_connections || first_auth) console.log('::SimplyWS:: authenticated')
+                first_auth = false
                 // cache current front
                 initializeCache()
                 break
             case "Authentication violation: Token is missing or invalid. Goodbye :)":
-                console.log('::SimplyWS:: invalid token, exiting..')
+                console.error('::SimplyWS:: invalid token, exiting..')
                 process.exit(1)
             case "update":
-                initializeCache()
                 bc.postMessage({data: data})
                 break
             default:

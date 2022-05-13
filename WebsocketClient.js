@@ -7,7 +7,7 @@ function WebSocketClient(url) {
     let connecting = false
     let backoff = 250
     const init = () => {
-        console.error(`::SimplyWS:: [${timestamp()}] connecting`)
+        if (!process.env.silence_connections) console.error(`::SimplyWS:: [${timestamp()}] connecting`)
         connecting = false
         if (client !== undefined) {
             client.removeAllListeners()
@@ -21,14 +21,14 @@ function WebSocketClient(url) {
             timeout = setTimeout(() => client.terminate(), process.env.heartbeat || 350000)
         }
         client.on('ping', () => {
-            console.log(`::SimplyWS:: [${timestamp()}] pinged`)
+            if (!process.env.silence_connections) console.log(`::SimplyWS:: [${timestamp()}] pinged`)
             heartbeat()
         })
         client.on('open', (e) => {
             if (typeof this.onOpen === 'function') {
                 this.onOpen()
             } else {
-                console.log(`::SimplyWS:: [${timestamp()}] opened`)
+                if (!process.env.silence_connections) console.log(`::SimplyWS:: [${timestamp()}] opened`)
                 console.log(e)
             }
             heartbeat()
@@ -37,7 +37,7 @@ function WebSocketClient(url) {
             if (typeof this.onMessage === 'function') {
                 this.onMessage(e)
             } else {
-                console.log(`::SimplyWS:: [${timestamp()}] messaged`)
+                if (!process.env.silence_connections) console.log(`::SimplyWS:: [${timestamp()}] messaged`)
             }
             heartbeat()
         })
