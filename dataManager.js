@@ -221,10 +221,9 @@ async function removeFront(member) {
 
 async function updateCustomStatus(member) {
     // find the "primary" fronter to move to the first element in the list
-    let system = new System(Config)
     let fronters = await getPKFronters()
     let primary = await findPrimary()
-    if (primary && fronters.length > 1) {
+    if (primary && fronters.length > 1 && (member.content.pkId == primary)) {
         if (fronters.indexOf(primary) >= 0) {
             fronters.splice(fronters.indexOf(primary), 1)
             fronters.unshift(primary)
@@ -234,9 +233,7 @@ async function updateCustomStatus(member) {
                 headers: pkHeader
             })
                 .catch(async err => {
-                    if (err.toJSON().status == 400)
-                        unknownError400()
-                    else if (err.toJSON().status == 429)
+                    if (err.toJSON().status == 429)
                         //Too many requests
                         console.warn("::SimplyWS:: Too many requests, waiting to try again.")
                         setTimeout(function () {
