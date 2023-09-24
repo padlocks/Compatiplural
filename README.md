@@ -19,3 +19,4 @@ These can be set either in the .env file, in terminal, or in the config vars sec
 | heartbeat | 4500000 | The time in miliseconds before the websocket client reconnects to the websocket server. |
 | max_workers | 1 | Max number of workers for processing enqueued tasks. This probably shouldn't be changed. |
 | silence_connections | true | Whether or not to silence the websocket connection and authentication messages. |
+| full_swap | false | Determines whether to completely overwrite PluralKit's front with SimplyPlural's. No individual changes. |

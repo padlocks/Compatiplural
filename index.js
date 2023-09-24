@@ -3,7 +3,7 @@ dotenv.config()
 
 const { Config, System } = require('simplyapi')
 const { Util } = require('simplyapi')
-const { initializeCache, determineAction, insertFront, removeFront, updateCustomStatus } = require('./dataManager')
+const { initializeCache, determineAction, swapFront, insertFront, removeFront, updateCustomStatus } = require('./dataManager')
 
 const {
     isMainThread,
@@ -95,8 +95,12 @@ update = async (data) => {
             await Util.asyncForEach(data.results, async (o) => {
                 let system = new System(Config)
                 let member = await system.getMemberById(o.content.member)
+                let swap = Config.full_swap
                 // insert
-                if (o.operationType == "insert") {
+                if (swap) {
+                    swapFront()
+                }
+                else if (o.operationType == "insert") {
                     insertFront(member)
                 }
                 else {

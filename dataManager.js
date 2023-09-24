@@ -106,6 +106,69 @@ async function determineAction(eventData, frontData = []) {
     return action
 }
 
+async function swapFront() {
+    let system = new System(Config)
+    let front = await system.getFronters()
+    
+    // start forming new front list
+    let newFront = []
+    for (member of front) {
+        let m = await system.getMemberById(member.content.member)
+
+        if (m.content.pkId) {
+            // fronting member pkID has been found
+            newFront.push(m.content.pkId)
+        }
+    }
+
+    // shift primary fronter to first in list
+    let primary = await findPrimary()
+    if (primary) {
+        if (newFront.indexOf(primary) > 0) {
+            newFront.splice(newFront.indexOf(primary), 1)
+            newFront.unshift(primary)
+        }
+    }
+
+    // post the new switch        
+    let url = `${pkUrl}/systems/@me/switches`
+    await axios.post(url, JSON.stringify({ "members": newFront }), {
+        headers: pkHeader
+    })
+        .then(async (res) => {
+            // check if current front equals the new front
+            let front = await getPKFronters()
+            var equal = (front.length == newFront.length) && front.every(function(element, index) {
+                return element === newFront[index]; 
+            })
+            if (!equal) {
+                console.log('::SimplyWS:: Failed to swap front: ' + newFront)
+                await swapFront()
+                return
+            } else {
+                console.log('::SimplyWS:: SP\'s front has been published to PK.')
+            }
+        })
+        .catch(async err => {
+            let status = err.status || err.toJSON().status
+            if (status == 400) {
+                // if the fronter is already in the front, do nothing
+                return
+            }
+            else if (status == 404) {
+                return
+            }
+            else if (status == 429) {
+                // Too many requests
+                console.warn("::SimplyWS:: Too many requests, waiting to try again.")
+                setTimeout(async function () {
+                    await swapFront()
+                }, 1000)
+                return
+            }
+        })
+}
+
 async function insertFront(member) {
     // get current fronters and add new fronter
     let fronters = await getPKFronters()
@@ -275,6 +338,7 @@ module.exports = {
     getPKFronters,
     findPrimary,
     determineAction,
+    swapFront,
     insertFront,
     removeFront,
     updateCustomStatus,
