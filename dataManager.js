@@ -52,7 +52,7 @@ async function findPrimary() {
             if (fronter.content.customStatus) {
                 if (fronter.content.customStatus.toLowerCase().includes("primary")) {
                     let member = await system.getMemberById(fronter.content.member)
-                    resolve(member.content.pkId)
+                    resolve({ name: member.content.name, pkId: member.content.pkId })
                     found = true
                 }
             }
@@ -112,21 +112,30 @@ async function swapFront() {
     
     // start forming new front list
     let newFront = []
+    let frontNames = []
     for (member of front) {
         let m = await system.getMemberById(member.content.member)
 
         if (m.content.pkId) {
             // fronting member pkID has been found
             newFront.push(m.content.pkId)
+            frontNames.push(m.content.name)
         }
     }
 
     // shift primary fronter to first in list
     let primary = await findPrimary()
-    if (primary) {
-        if (newFront.indexOf(primary) > 0) {
-            newFront.splice(newFront.indexOf(primary), 1)
-            newFront.unshift(primary)
+    let primaryPK = primary.pkId
+    let primaryName = primary.name
+    if (primaryPK) {
+        if (newFront.indexOf(primaryPK) > 0) {
+            newFront.splice(newFront.indexOf(primaryPK), 1)
+            newFront.unshift(primaryPK)
+        }
+
+        if (frontNames.indexOf(primaryName) > 0) {
+            frontNames.splice(frontNames.indexOf(primaryName), 1)
+            frontNames.unshift(primaryName)
         }
     }
 
@@ -146,7 +155,8 @@ async function swapFront() {
                 await swapFront()
                 return
             } else {
-                console.log('::SimplyWS:: SP\'s front has been published to PK.')
+                let formattedNames = frontNames.toString().replace(',',', ')
+                console.log(`::SimplyWS:: SimplyPlural -> PluralKit: ${formattedNames}`)
             }
         })
         .catch(async err => {
@@ -180,7 +190,7 @@ async function insertFront(member) {
     }
 
     // find the "primary" fronter to move to the first element in the list
-    let primary = await findPrimary()
+    let primary = await findPrimary().pkId
     if (primary) {
         if (fronters.indexOf(primary) > 0) {
             fronters.splice(fronters.indexOf(primary), 1)
@@ -241,11 +251,11 @@ async function removeFront(member) {
     }
 
     // find the "primary" fronter to move to the first element in the list
-    let p = await findPrimary()
-    if (p) {
-        if (fronters.indexOf(p) > 0) {
-            fronters.splice(fronters.indexOf(p), 1)
-            fronters.unshift(p)
+    let primary = await findPrimary().pkId
+    if (primary) {
+        if (fronters.indexOf(primary) > 0) {
+            fronters.splice(fronters.indexOf(primary), 1)
+            fronters.unshift(primary)
         }
     }
 
@@ -285,7 +295,7 @@ async function removeFront(member) {
 async function updateCustomStatus(member) {
     // find the "primary" fronter to move to the first element in the list
     let fronters = await getPKFronters()
-    let primary = await findPrimary()
+    let primary = await findPrimary().pkId
     if (primary && fronters.length > 1 && (member.content.pkId == primary)) {
         if (fronters.indexOf(primary) >= 0) {
             fronters.splice(fronters.indexOf(primary), 1)
