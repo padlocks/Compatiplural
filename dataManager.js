@@ -50,7 +50,7 @@ async function findPrimary() {
     return new Promise(async (resolve) => {
         await Util.asyncForEach(fronters, async (fronter) => {
             if (fronter.content.customStatus) {
-                if (fronter.content.customStatus.toLowerCase().includes("primary")) {
+                if (fronter.content.customStatus.toLowerCase().includes(Config.primary_tag)) {
                     let member = await system.getMemberById(fronter.content.member)
                     resolve({ name: member.content.name, pkId: member.content.pkId })
                     found = true
