@@ -5,3 +5,5 @@ config.json
 package-lock.json
 .env
 .vercel
+docker_build.bat
+docker_run.bat

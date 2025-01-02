@@ -50,7 +50,7 @@ async function findPrimary() {
     return new Promise(async (resolve) => {
         await Util.asyncForEach(fronters, async (fronter) => {
             if (fronter.content.customStatus) {
-                if (fronter.content.customStatus.toLowerCase().includes("primary")) {
+                if (fronter.content.customStatus.toLowerCase().includes(Config.primary_tag)) {
                     let member = await system.getMemberById(fronter.content.member)
                     resolve({ name: member.content.name, pkId: member.content.pkId })
                     found = true
@@ -116,10 +116,13 @@ async function swapFront() {
     for (member of front) {
         let m = await system.getMemberById(member.content.member)
 
-        if (m.content.pkId) {
+        if (m.content && m.content.pkId) {
             // fronting member pkID has been found
             newFront.push(m.content.pkId)
             frontNames.push(m.content.name)
+        }
+        else {
+            console.warn('::SimplyWS:: System member not found, this may be a custom front which is unsupported.')
         }
     }
 
